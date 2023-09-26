@@ -8,6 +8,53 @@ on:
 permissions:
   contents: read
 jobs:
+  oldest-libtpu-test:
+    strategy:
+      fail-fast: false # don't cancel all jobs on failure
+      matrix:
+        jaxlib-version: ["1.10.0"]
+        tpu-type: ["v4-8"]
+    name: "TPU test (${{ matrix.jaxlib-version }}, ${{ matrix.tpu-type }})"
+    runs-on: ["self-hosted", "tpu", "${{ matrix.tpu-type }}"]
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash -ex {0}
+    steps:
+      # https://opensource.google/documentation/reference/github/services#actions
+      # mandates using a specific commit for non-Google actions. We use
+      # https://github.com/sethvargo/ratchet to pin specific versions.
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # ratchet:actions/checkout@v3
+      - name: Install JAX test requirements
+        run: |
+          pip install -U -r build/test-requirements.txt
+          pip install -U -r build/collect-profile-requirements.txt
+      - name: Install JAX
+        run: |
+          pip uninstall -y jax jaxlib libtpu-nightly
+          pip install .[tpu] \
+            -f https://storage.googleapis.com/jax-releases/libtpu_releases.html \
+            -v jaxlib==1.10.0
+      - name: Run tests
+        env:
+          JAX_PLATFORMS: tpu,cpu
+          PY_COLORS: 1
+        run: |
+          # Run single-accelerator tests in parallel
+          JAX_ENABLE_TPU_XDIST=true python3 -m pytest -n=4 --tb=short \
+            --maxfail=20 -m "not multiaccelerator" tests examples
+          # Run multi-accelerator across all chips
+          python3 -m pytest --tb=short --maxfail=20 -m "multiaccelerator" tests
+      - name: Send chat on failure
+        # Don't notify when testing the workflow from a branch.
+        if: ${{ (failure() || cancelled()) && github.ref_name == 'main' }}
+        run: |
+          curl --location --request POST '${{ secrets.BUILD_CHAT_WEBHOOK }}' \
+            --header 'Content-Type: application/json' \
+            --data-raw "{
+            'text': '\"$GITHUB_WORKFLOW\", jaxlib/libtpu version \"${{ matrix.jaxlib-version }}\", TPU type ${{ matrix.tpu-type }} job failed, timed out, or was cancelled: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID'
+            }"
+
   cloud-tpu-test:
     strategy:
       fail-fast: false # don't cancel all jobs on failure
