@@ -44,9 +44,9 @@ jobs:
               -f https://storage.googleapis.com/jax-releases/jaxlib_nightly_releases.html
             pip install --pre libtpu-nightly \
               -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
-            pip install --pre libtpu-0.1.dev${{ $DATE_12_WEEKS_AGO }}-py3-none-any.whl \
+            pip install --pre libtpu-0.1.dev${{ env.DATE_12_WEEKS_AGO }}-py3-none-any.whl \
               -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
-            echo "Installed libptu from 12 weeks ago: "libtpu-0.1.dev${{ $DATE_12_WEEKS_AGO }}"
+            echo "Installed libptu from 12 weeks ago: "libtpu-0.1.dev${{ env.DATE_12_WEEKS_AGO }}"
             pip install requests
 
           else
