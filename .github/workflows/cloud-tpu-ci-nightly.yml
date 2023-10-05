@@ -15,6 +15,8 @@ jobs:
         jaxlib-version: ["latest", "nightly"]
         tpu-type: ["v3-8", "v4-8", "nightly"]
     name: "TPU test (${{ matrix.jaxlib-version }}, ${{ matrix.tpu-type }})"
+    env:
+      DATE_12_WEEKS_AGO: $(python3 -c "import datetime; print(datetime.date.today() - datetime.timedelta(weeks=12))")
     runs-on: ["self-hosted", "tpu", "${{ matrix.tpu-type }}"]
     timeout-minutes: 60
     defaults:
@@ -30,8 +32,6 @@ jobs:
           pip install -U -r build/test-requirements.txt
           pip install -U -r build/collect-profile-requirements.txt
       - name: Install JAX
-        env:
-          DATE_12_WEEKS_AGO: $(python3 -c "import datetime; print(datetime.date.today() - datetime.timedelta(weeks=12))")
         run: |
           pip uninstall -y jax jaxlib libtpu-nightly
           if [ "${{ matrix.jaxlib-version }}" == "latest" ]; then
