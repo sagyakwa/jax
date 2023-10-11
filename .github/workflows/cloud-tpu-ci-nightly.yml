@@ -27,7 +27,7 @@ jobs:
         jaxlib-version: ["pypi_latest", "nightly"]
         tpu-type: ["v3-8", "v4-8", "v5e-4"]
     name: "TPU test (jaxlib=${{ matrix.jaxlib-version }}, ${{ matrix.tpu-type }})"
-    runs-on: ["self-hosted", "tpu", "${{ matrix.tpu-type }}"]
+    runs-on: self-hosted
     timeout-minutes: 60
     defaults:
       run:
